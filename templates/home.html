@@ -10,6 +10,9 @@
 </form>
 
         <h1>Headlines for {{publication}}</h1>
+        <h2>Current weather</h2>
+        <p>City: <b>{{weather.city}}</b></p>
+        <p>{{weather.description}} | {{weather.temperature}}&#8451;</p>
         {% for article in articles %}
         <b><a href="{{article.link}}"> {{article.title}}</a></b><br/>
         <i>{{article.published}}</i><br/>
