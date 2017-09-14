@@ -1,7 +1,8 @@
-import feedparser
-import json
-import urllib2
+""" required import modules for application"""
 import urllib
+import urllib2
+import json
+import feedparser
 
 from flask import Flask
 from flask import render_template
@@ -14,25 +15,48 @@ RSS_FEEDS = {'bbc': 'http://feeds.bbci.co.uk/news/rss.xml',
              'fox': 'http://feeds.foxnews.com/foxnews/latest',
              'iol': 'http://www.iol.co.za/cmlink/1.640'}
 
+DEFAULTS = {
+    'publication' : 'bbc',
+    'city' : 'London, UK'
+}
+
+WEATHER_URL = "http://api.openweathermap.org/data/2.5/weather?"+_
+"q={}&units=metric&APPID=79f31e50e17bdba0f6162b4e16a3ae27"
+
 @APP.route("/")
-def get_news():
-    """ Returns the first RSS feed """
-    query = request.args.get("publication")
+def home():
+    """ Home function """
+    # get customised headlines, based on user input or defaults.
+    publication = request.args.get('publication')
+    if not publication:
+        publication = DEFAULTS['publication']
+
+    articles = get_news(publication)
+
+    # get customised weather based on user input of default
+    city = request.args.get('city')
+    if not city:
+        city = DEFAULTS['city']
+    weather = get_weather(city)
+
+    return render_template("home.html",
+                           publication=publication.upper(),
+                           articles=articles,
+                           weather=weather)
+
+def get_news(query):
+    """ Returns the RSS feed for requested or Default publication """
     if not query or query.lower() not in RSS_FEEDS:
-        publication = "bbc"
+        publication = DEFAULTS['publication']
     else:
         publication = query.lower()
     feed = feedparser.parse(RSS_FEEDS[publication])
-    weather = get_weather("London, UK")
-    return render_template("home.html", 
-                           publication=publication.upper(),
-                           articles=feed['entries'],
-                           weather=weather)
+    return feed['entries']
 
 def get_weather(query):
-    api_url = 'http://api.openweathermap.org/data/2.5/weather?q={}&units=metric&APPID=79f31e50e17bdba0f6162b4e16a3ae27'
+    """ Returns weather for requested or default City"""
     query = urllib.quote(query)
-    url = api_url.format(query)
+    url = WEATHER_URL.format(query)
     data = urllib2.urlopen(url).read()
     parsed = json.loads(data)
     weather = None

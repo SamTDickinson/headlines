@@ -11,6 +11,10 @@
 
         <h1>Headlines for {{publication}}</h1>
         <h2>Current weather</h2>
+<form>
+    <input type="text" name="city" placeholder="Weather Search" />
+    <input type="submit" value="Submit"/>
+</form>        
         <p>City: <b>{{weather.city}}</b></p>
         <p>{{weather.description}} | {{weather.temperature}}&#8451;</p>
         {% for article in articles %}
