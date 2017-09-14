@@ -2,11 +2,13 @@
 import urllib
 import urllib2
 import json
+import datetime
 import feedparser
 
 from flask import Flask
 from flask import render_template
 from flask import request
+from flask import make_response
 
 APP = Flask(__name__)
 
@@ -25,40 +27,49 @@ DEFAULTS = {
 WEATHER_URL = "http://api.openweathermap.org/data/2.5/weather?q={}&units=metric&APPID=79f31e50e17bdba0f6162b4e16a3ae27"
 CURRENCY_URL = "https://openexchangerates.org//api/latest.json?app_id=a010a8aa4c284792bdfbfb4b0e9b2367"
 
+
+def get_value_with_fallback(key):
+    """ get request, cookie or default user values """
+    if request.args.get(key):
+        return request.args.get(key)
+    if request.cookies.get(key):
+        return request.cookies.get(key)
+    return DEFAULTS[key]
+
 @APP.route("/")
+
 def home():
     """ Home function """
     # get customised headlines, based on user input or defaults.
-    publication = request.args.get('publication')
-    if not publication:
-        publication = DEFAULTS['publication']
-
+    publication = get_value_with_fallback('publication')
     articles = get_news(publication)
 
     # get customised weather based on user input of default
-    city = request.args.get('city')
-    if not city:
-        city = DEFAULTS['city']
+    city = get_value_with_fallback('city')
     weather = get_weather(city)
 
-    currency_from = request.args.get('currency_from')
-    if not currency_from:
-        currency_from = DEFAULTS['currency_from']
-
-    currency_to = request.args.get('currency_to')
-    if not  currency_to:
-        currency_to = DEFAULTS['currency_to']
-
+    currency_from = get_value_with_fallback('currency_from')
+    currency_to = get_value_with_fallback('currency_to')
     rate, currencies = get_currency(currency_from, currency_to)
 
-    return render_template("home.html",
-                           publication=publication.upper(),
-                           articles=articles,
-                           weather=weather,
-                           currency_from=currency_from,
-                           currency_to=currency_to,
-                           rate=rate,
-                           currencies=sorted(currencies))
+    response = make_response(
+        render_template("home.html",
+                        publication=publication.upper(),
+                        articles=articles,
+                        weather=weather,
+                        currency_from=currency_from,
+                        currency_to=currency_to,
+                        rate=rate,
+                        currencies=sorted(currencies)))
+    expires = datetime.datetime.now() + datetime.timedelta(days=365)
+    response.set_cookie("publication", publication, expires=expires)
+    response.set_cookie("city", city, expires=expires)
+    response.set_cookie("currency_from", currency_from, expires=expires)
+    response.set_cookie("currency_to", currency_to, expires=expires)
+
+    return response
+
+
 
 def get_news(query):
     """ Returns the RSS feed for requested or Default publication """
